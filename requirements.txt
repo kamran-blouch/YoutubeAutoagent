@@ -1,0 +1,11 @@
+fastapi 
+uvicorn 
+requests 
+python-dotenv 
+pytrends 
+google-api-python-client 
+groq 
+-e
+cachetools
+
+

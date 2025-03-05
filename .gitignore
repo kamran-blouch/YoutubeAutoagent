@@ -11,3 +11,6 @@ logs/
 __pycache__/
 *.pyc
 *.pyo
+
+# Ignore audio files
+output_audio.mp3

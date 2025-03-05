@@ -5,7 +5,14 @@ python-dotenv
 pytrends 
 google-api-python-client 
 groq 
--e
+-e .
 cachetools
-
-
+soundfile
+torch
+numpy
+scipy
+pyttsx3
+pydub
+transformers
+torchaudio
+gTTS

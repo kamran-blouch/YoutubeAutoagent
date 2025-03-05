@@ -1,11 +1,12 @@
 from agents.idea_generation import get_trending_ideas
 from agents.script_writer import script_generator
+from agents.text_to_speech import text_to_speech
 from configs.settings import DEFAULT_REGION, MAX_RESULTS
 
 def main():
-    """Main function to integrate Idea Generation and Script Generator Agents."""
+    """Main function to integrate Idea Generation, Script Generator, and TTS Agents."""
     
-    print("\n📌 Choose how you want to generate a script for your youtube agent:")
+    print("\n📌 Choose how you want to generate a script for your YouTube agent:")
     print("1. Use a trending topic (from Idea Generation Agent)")
     print("2. Enter a custom topic")
     
@@ -54,6 +55,10 @@ def main():
     
     print("\n📌 Generated Video Script:")
     print(script_result)
+
+    # Convert script to speech
+    print("\n🎙️ Converting script to speech...")
+    text_to_speech(script_result)
 
 if __name__ == "__main__":
     main()

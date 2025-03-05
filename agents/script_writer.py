@@ -3,7 +3,7 @@ from models.llm_model import generate_titles, generate_script
 from configs.settings import DEFAULT_REGION, MAX_RESULTS
 
 def script_generator(region=DEFAULT_REGION, topic=None, return_json=True, selected_index=None):
-    """Generates a video script dynamically based on the selected topic."""
+    """Generates a short, clean, and properly formatted video script."""
 
     # Step 1: Generate 5 specific video titles for the given topic
     generated_titles = generate_titles(topic)
@@ -28,7 +28,8 @@ def script_generator(region=DEFAULT_REGION, topic=None, return_json=True, select
     generated_script = generate_script(selected_title)
 
     result = {
-        "script": generated_script.strip()  # ✅ Ensure clean and dynamic formatting
+        "script": generated_script.strip()  # ✅ Clean, natural English script
     }
 
-    return json.dumps(result, indent=2) if return_json else result
+    return generated_script.strip()  # ✅ Directly return text, not JSON
+

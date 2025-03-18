@@ -9,5 +9,6 @@ class TTSModel:
             tts.save(audio_file)
             print(f"✅ Speech saved as {audio_file}")
             os.system(f"start {audio_file}")  # Opens the audio file automatically (Windows)
+            return audio_file
         except Exception as e:
             print(f"❌ Error in TTS conversion: {e}")

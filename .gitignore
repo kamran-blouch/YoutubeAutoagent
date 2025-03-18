@@ -15,3 +15,6 @@ __pycache__/
 # Ignore audio files
 output_audio.mp3
 final_video.mp4
+README.md
+final_video.srt
+final_video_with_subs.mp4

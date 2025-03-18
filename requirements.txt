@@ -19,3 +19,4 @@ gTTS
 moviepy==1.0.3
 FFmpeg
 Pillow==9.5.0
+srt

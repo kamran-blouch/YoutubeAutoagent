@@ -4,6 +4,7 @@ from agents.script_writer import script_generator
 from agents.text_to_speech import TTSModel
 from agents.video_editor import create_video
 from agents.subtitle_generator import add_subtitles_to_video
+from agents.thumbnail_generator import generate_thumbnail  # Import the new function
 from configs.settings import DEFAULT_REGION, MAX_RESULTS
 
 def main():
@@ -75,6 +76,14 @@ def main():
             print("\n📝 Generating subtitles...")
             final_video_with_subs = add_subtitles_to_video(video_path, script_result, "final_video_with_subs.mp4")
             print(f"\n✅ Final video with subtitles generated: {final_video_with_subs}")
+
+            # 🔥 Generate the Thumbnail after the final video
+            thumbnail_path = generate_thumbnail(selected_topic)
+            if thumbnail_path:
+                print(f"\n✅ Thumbnail successfully generated: {thumbnail_path}")
+            else:
+                print("\n❌ Thumbnail generation failed.")
+
         else:
             print("\n❌ Failed to generate video. Please try again later.")
     

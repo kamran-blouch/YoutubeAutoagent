@@ -4,7 +4,8 @@ from agents.script_writer import script_generator
 from agents.text_to_speech import TTSModel
 from agents.video_editor import create_video
 from agents.subtitle_generator import add_subtitles_to_video
-from agents.thumbnail_generator import generate_thumbnail  # Import the new function
+from agents.thumbnail_generator import generate_thumbnail  
+from agents.seo_optimizer import optimize_seo  # ✅ New SEO Agent
 from configs.settings import DEFAULT_REGION, MAX_RESULTS
 
 def main():
@@ -83,6 +84,16 @@ def main():
                 print(f"\n✅ Thumbnail successfully generated: {thumbnail_path}")
             else:
                 print("\n❌ Thumbnail generation failed.")
+
+            # ✅ SEO & Metadata Optimization Agent
+            print("\n📈 Optimizing SEO and metadata...")
+            seo_result = optimize_seo(selected_topic)
+            
+            if seo_result:
+                print("\n✅ SEO Optimization Complete!")
+                print(seo_result)  # ✅ Print the whole response as plain text
+            else:
+                print("\n❌ SEO optimization failed.")
 
         else:
             print("\n❌ Failed to generate video. Please try again later.")

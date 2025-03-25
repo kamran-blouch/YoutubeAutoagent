@@ -3,7 +3,7 @@ import requests
 import re  # ✅ Used to clean non-spoken text
 from configs.settings import GROQ_API_KEY
 
-GROQ_MODEL = "mixtral-8x7b-32768"  # ✅ Best available model from Groq
+GROQ_MODEL = "mistral-saba-24b"  # ✅ Best available model from Groq
 
 def clean_script_for_voice(script):
     """Cleans the script by removing unwanted characters and ensuring a short, well-structured format."""

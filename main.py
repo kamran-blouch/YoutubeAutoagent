@@ -4,99 +4,147 @@ from agents.script_writer import script_generator
 from agents.text_to_speech import TTSModel
 from agents.video_editor import create_video
 from agents.subtitle_generator import add_subtitles_to_video
-from agents.thumbnail_generator import generate_thumbnail  
-from agents.seo_optimizer import optimize_seo  # ✅ New SEO Agent
+from agents.thumbnail_generator import generate_thumbnail
+from agents.seo_optimizer import optimize_seo
+from agents.video_upload import upload_video_with_thumbnail
 from configs.settings import DEFAULT_REGION, MAX_RESULTS
 
-def main():
-    """Main function to integrate all agents and generate a complete YouTube video."""
-    print("\n📌 Choose how you want to generate a script for your YouTube agent:")
-    print("1. Use a trending topic (from Idea Generation Agent)")
-    print("2. Enter a custom topic")
-    
-    choice = input("\nEnter 1 or 2: ").strip()
+DEFAULT_THUMBNAIL = "default_thumbnail.png"
+GENERATED_THUMBNAIL = "generated_thumbnail.png"
+FINAL_VIDEO_NAME = "final_video_with_subs.mp4"
 
+def select_from_list(prompt, options):
+    print(f"\n📌 {prompt}")
+    for i, opt in enumerate(options, 1):
+        print(f"{i}. {opt}")
+    try:
+        idx = int(input("Enter number: ")) - 1
+        if 0 <= idx < len(options):
+            return options[idx]
+    except ValueError:
+        pass
+    print("❌ Invalid selection.")
+    return None
+
+def get_topic():
+    print("\n📌 Choose script generation method:\n1. Trending Topic\n2. Custom Topic")
+    choice = input("Enter 1 or 2: ").strip()
     if choice == "1":
-        region = input("\nEnter country code (e.g., US, GB, IN, PK): ").strip().upper()
-        specific_topic = input("Enter a specific topic (or press Enter for general trending topics): ").strip()
-        trending_ideas = get_trending_ideas(region, specific_topic if specific_topic else None, MAX_RESULTS, return_json=False)
-        trending_topics = trending_ideas["trending_topics"]
-
-        if not trending_topics:
-            print("❌ No trending topics found. Try again later.")
-            return
-
-        print(f"\n📌 Trending Topics in {region} for '{specific_topic if specific_topic else 'General Trends'}':")
-        for idx, topic in enumerate(trending_topics, start=1):
-            print(f"{idx}. {topic}")
-
-        try:
-            selected_index = int(input("\nSelect a topic by number: ")) - 1
-            if selected_index < 0 or selected_index >= len(trending_topics):
-                print("❌ Invalid selection.")
-                return
-        except ValueError:
-            print("❌ Invalid input. Please enter a number.")
-            return
-
-        selected_topic = trending_topics[selected_index]
-        print(f"\n✅ Selected Topic: {selected_topic}")
+        region = input("Enter country code (e.g., US, IN): ").strip().upper()
+        specific_topic = input("Enter specific topic (optional): ").strip()
+        trending = get_trending_ideas(region, specific_topic or None, MAX_RESULTS, return_json=False)
+        topics = trending.get("trending_topics", [])
+        if not topics:
+            print("❌ No trending topics found.")
+            return None, None
+        topic = select_from_list(f"Trending Topics in {region}", topics)
+        return topic, region
     elif choice == "2":
-        selected_topic = input("\nEnter your custom topic: ").strip()
-        if not selected_topic:
-            print("❌ Invalid input. Topic cannot be empty.")
-            return
+        topic = input("Enter your custom topic: ").strip()
+        return topic, DEFAULT_REGION if topic else (None, None)
     else:
-        print("❌ Invalid choice. Please enter 1 or 2.")
+        print("❌ Invalid choice.")
+        return None, None
+
+def generate_script(region, topic):
+    result = script_generator(region, topic, return_json=False)
+    if isinstance(result, list):
+        title = select_from_list("Suggested Video Titles", result)
+        return script_generator(region, title, return_json=False) if title else None
+    elif isinstance(result, dict):
+        if "error" in result:
+            print(f"❌ Script generation failed: {result['error']}")
+            return None
+        return result.get("script")
+    return result if isinstance(result, str) else None
+
+def main():
+    topic, region = get_topic()
+    if not topic:
         return
 
-    script_result = script_generator(region if choice == "1" else DEFAULT_REGION, selected_topic, return_json=False)
-    print("\n📌 Generated Video Script:")
-    print(script_result)
+    script = generate_script(region, topic)
+    if not script or not script.strip():
+        print("❌ Invalid or empty script.")
+        return
 
+    print("\n📌 Generated Script:\n", script)
+
+    # TTS
     print("\n🎙️ Converting script to speech...")
-    tts_model = TTSModel()
-    audio_file = tts_model.convert_text_to_speech(script_result)
-    
-    if audio_file and os.path.exists(audio_file):
-        print(f"\n✅ Audio generated successfully: {audio_file}")
-    else:
-        print("\n❌ Audio generation failed. Check TTS output.")
+    try:
+        tts = TTSModel()
+        audio_file = tts.convert_text_to_speech(script)
+        if not (audio_file and os.path.exists(audio_file)):
+            raise Exception("Audio file not created.")
+        print(f"✅ Audio generated: {audio_file}")
+    except Exception as e:
+        print(f"❌ TTS Error: {e}")
         return
-    
-    generate_video_choice = input("\n🎥 Do you want to generate a video for this script? (Press Enter to continue, or type 'no' to exit): ").strip().lower()
-    
-    if generate_video_choice in ["", "yes"]:
-        print("\n🔍 Searching for relevant videos from Pexels...")
-        video_path = create_video(selected_topic, audio_file)
-        
-        if video_path:
-            print(f"\n✅ Video successfully generated: {video_path}")
-            
-            # Add subtitles to the video
-            print("\n📝 Generating subtitles...")
-            final_video_with_subs = add_subtitles_to_video(video_path, script_result, "final_video_with_subs.mp4")
-            print(f"\n✅ Final video with subtitles generated: {final_video_with_subs}")
 
-            # 🔥 Generate the Thumbnail after the final video
-            thumbnail_path = generate_thumbnail(selected_topic)
-            if thumbnail_path:
-                print(f"\n✅ Thumbnail successfully generated: {thumbnail_path}")
+    # Video Generation
+    if input("\n🎥 Generate video? (Enter=yes / no=skip): ").strip().lower() in ["", "yes"]:
+        print("\n🔍 Searching Pexels...")
+        video_path = create_video(topic, audio_file)
+        if not (video_path and os.path.exists(video_path)):
+            print("❌ Video generation failed.")
+            return
+
+        print(f"✅ Video created: {video_path}")
+        print("\n📝 Adding subtitles...")
+        final_video = add_subtitles_to_video(video_path, script, FINAL_VIDEO_NAME)
+        if not final_video or not os.path.exists(final_video):
+            print("❌ Subtitles failed.")
+            return
+        print(f"✅ Final video: {final_video}")
+
+        # Thumbnail
+        print("\n🖼️ Generating thumbnail...")
+        thumb_path = generate_thumbnail(topic)
+        thumb_file = GENERATED_THUMBNAIL if thumb_path and os.path.exists(GENERATED_THUMBNAIL) else None
+
+        if not thumb_file:
+            fallback = input("❌ Thumbnail failed. Use default or skip? (default/skip): ").strip().lower()
+            if fallback == "default" and os.path.exists(DEFAULT_THUMBNAIL):
+                if DEFAULT_THUMBNAIL != GENERATED_THUMBNAIL:
+                    os.rename(DEFAULT_THUMBNAIL, GENERATED_THUMBNAIL)
+                thumb_file = GENERATED_THUMBNAIL
+                print(f"✅ Default thumbnail used: {thumb_file}")
             else:
-                print("\n❌ Thumbnail generation failed.")
+                thumb_file = None
 
-            # ✅ SEO & Metadata Optimization Agent
-            print("\n📈 Optimizing SEO and metadata...")
-            seo_result = optimize_seo(selected_topic)
-            
-            if seo_result:
-                print("\n✅ SEO Optimization Complete!")
-                print(seo_result)  # ✅ Print the whole response as plain text
-            else:
-                print("\n❌ SEO optimization failed.")
+        # SEO Optimization
+        print("\n📈 Optimizing SEO...")
+        seo = optimize_seo(topic) or {}
 
-        else:
-            print("\n❌ Failed to generate video. Please try again later.")
-    
+        # Set defaults with validation
+        seo["title"] = seo.get("title") or f"{topic.strip()} - Auto-Generated"
+        seo["description"] = seo.get("description") or f"Explore {topic.strip()} in this AI-generated video!"
+        seo["tags"] = seo.get("tags") or [topic.strip(), f"{topic.strip()} video", "AI", "auto-generated"]
+
+        # Ensure title is valid
+        if not seo["title"] or not seo["title"].strip():
+            print("❌ Error: SEO title is missing or empty.")
+            return
+
+        print("✅ SEO:", seo)
+
+
+        # Upload
+        print("\n📤 Uploading to YouTube...")
+        try:
+            video_id = upload_video_with_thumbnail(
+                file_path=final_video,
+                title=seo["title"],
+                description=seo["description"],
+                tags=seo["tags"],
+                thumbnail_path=thumb_file,
+                category_id="22",
+                privacy_status="public"
+            )
+            print(f"\n✅ Uploaded! Video ID: {video_id}")
+        except Exception as e:
+            print(f"\n❌ Upload error: {e}")
+
 if __name__ == "__main__":
     main()
